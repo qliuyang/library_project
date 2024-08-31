@@ -1,10 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:http/http.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:archive/archive.dart';
 import 'requests.dart';
@@ -58,18 +58,21 @@ class Sql {
     }
   }
 
-  Future<void> extractZip(Uint8List zipByte, File targetFilePath) async {
-    final archive = ZipDecoder().decodeBytes(zipByte.buffer.asUint8List());
+  Future<void> extractDBFileFromZip(
+      Uint8List zipUintList, File extractedDbPath) async {
+    final archive = ZipDecoder().decodeBytes(zipUintList);
     for (final file in archive) {
-      final fileContent = file.content as List<int>;
-      await targetFilePath.writeAsBytes(fileContent);
+      if (file.name == 'data.db') {
+        final dbBytes = file.content as Uint8List;
+        await extractedDbPath.writeAsBytes(dbBytes);
+        break;
+      }
     }
   }
 
-  Future<bool> compareIsSameFileSize(File dbFile, Uint8List zipData) async {
-    var dbFileSize = (await dbFile.length()).toInt();
-    var zipDataSize = zipData.lengthInBytes;
-
+  Future<bool> compareIsSameFileSize(File file, Uint8List data) async {
+    var dbFileSize = (await file.length()).toInt();
+    var zipDataSize = data.lengthInBytes;
     return dbFileSize == zipDataSize;
   }
 
@@ -81,23 +84,41 @@ class Sql {
     }
 
     StreamedResponse? onlineDatabase = await getOnlineDataBase();
-    Uint8List zipUintList;
+    Uint8List zipUintList = onlineDatabase != null
+        ? await onlineDatabase.stream.toBytes()
+        : (await rootBundle.load('assets/offline/data.zip'))
+            .buffer
+            .asUint8List();
 
-    if (onlineDatabase == null) {
-      zipUintList = (await rootBundle.load('assets/offline/data.zip')).buffer.asUint8List();
-    } else {
-      zipUintList = await onlineDatabase.stream.toBytes();
-    }
-
+    // 来自网络或者内部try
+    File zipTempFile = File(join(directory.path, 'data.zip'));
+    // 软件直接读取的db
     File dbPath = File(join(directory.path, 'data.db'));
 
-    if (!await dbPath.exists()) {
-      await extractZip(zipUintList, dbPath);
+    // 存储临时压缩包
+    if (await zipTempFile.exists()) {
+      if (!await compareIsSameFileSize(zipTempFile, zipUintList)) {
+        zipTempFile.writeAsBytes(zipUintList);
+      }
     } else {
-      if (await compareIsSameFileSize(dbPath, zipUintList)) {
-        return true;
+      zipTempFile.writeAsBytes(zipUintList);
+    }
+
+    // 直接读取的db不在
+    if (!await dbPath.exists()) {
+      await extractDBFileFromZip(zipUintList, dbPath);
+    } else {
+      // 直接读取的db在，先解压到temp_data.db
+      final extractedTempDbPath = File(join(directory.path, 'temp_data.db'));
+      await extractDBFileFromZip(zipUintList, extractedTempDbPath);
+      // 对比是否一样，不一样用网络下载的
+      bool isSame = await compareIsSameFileSize(
+          dbPath, await extractedTempDbPath.readAsBytes());
+      if (!isSame) {
+        await dbPath.delete();
+        await dbPath.rename(extractedTempDbPath.path);
       } else {
-        await extractZip(zipUintList, dbPath);
+        await extractedTempDbPath.delete();
       }
     }
     _database = await openDatabase(dbPath.path, version: 1);
@@ -142,10 +163,8 @@ class Sql {
     const query = 'SELECT * FROM Chapters WHERE bookId = ?';
     final results = await _database.rawQuery(query, [bookId]);
 
-    // Ensure results are available and index is valid
     if (results.isNotEmpty && chapterRowNum < results.length) {
       final chapterMap = results[chapterRowNum];
-
       return Chapter(
         bookId: chapterMap['bookId'] as int,
         title: chapterMap['title'] as String,
@@ -153,7 +172,7 @@ class Sql {
       );
     }
 
-    return null; // Return null if no chapter found
+    return null;
   }
 
   Future<List<Book>> getAllBooks() async {
