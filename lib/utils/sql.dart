@@ -90,8 +90,8 @@ class Sql {
             .buffer
             .asUint8List();
 
-    // 来自网络或者内部try
-    File zipTempFile = File(join(directory.path, 'data.zip'));
+    // 来自网络或者内部zip
+    File zipTempFile = File(join(directory.path, 'temp_data.zip'));
     // 软件直接读取的db
     File dbPath = File(join(directory.path, 'data.db'));
 
@@ -116,7 +116,7 @@ class Sql {
           dbPath, await extractedTempDbPath.readAsBytes());
       if (!isSame) {
         await dbPath.delete();
-        await dbPath.rename(extractedTempDbPath.path);
+        await extractedTempDbPath.rename(dbPath.path);
       } else {
         await extractedTempDbPath.delete();
       }

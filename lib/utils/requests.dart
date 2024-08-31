@@ -6,7 +6,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 
 Future<http.StreamedResponse?> getOnlineDataBase() async {
   const url =
-      'https://raw.githubusercontent.com/qliuyang/library_project/main/assets/online/data.zip';
+      'https://gitee.com/ly599575461/library_project/raw/main/assets/online/data.zip';
   try {
     final client = http.Client();
     final request = http.Request('GET', Uri.parse(url));
@@ -48,7 +48,7 @@ void handleApiError(int statusCode, [String? errorMessage]) {
     default:
       message = '服务器错误';
   }
-  showErrorMessage("$message,您无法连接到Github服务器,使用软件自带的数据");
+  showErrorMessage("$message,您无法连接到Gitee服务器,使用软件自带的数据");
 }
 
 void showErrorMessage(String message) {
