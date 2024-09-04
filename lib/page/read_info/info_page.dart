@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:library_project/page/custom_widget.dart';
 import 'read_page.dart';
-import '../../utils/sql.dart';
+import '../../utils/online_sql.dart';
 
 
 class InfoPage extends StatelessWidget {

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../utils/sql.dart';
+import '../../utils/online_sql.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import '../custom_widget.dart';
 
@@ -16,7 +16,8 @@ class _ReadPageState extends State<ReadPage> {
   String _content = '';
   String _bookTitle = '';
   String _chapterTitle = '';
-  int _chapterchapterRowNum = 1;
+  int _chapterchapterRowNum = 0;
+  late int _chapterPos;
   bool _isPureMode = true;
   late final ScrollController _scrollController;
 
@@ -37,17 +38,14 @@ class _ReadPageState extends State<ReadPage> {
   void _loadBookidAndTitle() {
     _bookId = widget.book.bookId;
     _bookTitle = widget.book.title;
+    _chapterPos = widget.book.chapterPos;
   }
 
   Future<void> _loadContent() async {
     if (_chapterchapterRowNum > 1) {
       scrollToTop();
     }
-    final chapter =
-        await Sql().getBookChapterByID(_bookId, _chapterchapterRowNum);
-    if (chapter == null) {
-      return;
-    }
+    final chapter = await BookGetterYunShuWu().getChapter(_chapterPos + _chapterchapterRowNum);
     setState(() {
       _chapterTitle = chapter.title;
       _content = chapter.content;

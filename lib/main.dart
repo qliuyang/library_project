@@ -1,6 +1,4 @@
-import 'package:library_project/page/classify/classify_page.dart';
 
-import 'utils/sql.dart';
 import 'package:flutter/material.dart';
 import 'page/home/home_page.dart';
 import 'page/search/search_page.dart';
@@ -70,19 +68,11 @@ class MyApp extends StatelessWidget {
 
 class _MainWindowState extends State<MainWindow> {
   int _selectedIndex = 0;
-  bool _isLoading = false;
 
   final List<Widget> _pages = const [
     HomePage(),
-    ClassifyPage(),
     SearchPage()
   ];
-
-  Future<void> _init() async {
-    if (!_isLoading) {
-      _isLoading = await Sql().init();
-    }
-  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -93,50 +83,32 @@ class _MainWindowState extends State<MainWindow> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: _init(),
-      builder: (BuildContext context, AsyncSnapshot snapshot) {
-        if (snapshot.connectionState == ConnectionState.done || _isLoading) {
-          return Scaffold(
-              appBar: AppBar(
-                title: const Text('书库Pro版'),
-              ),
-              drawer: const Drawer(
-                child: Center(
-                  child: Column(
-                    children: [
-                    ],
-                  ),
-                ),
-              ),
-              body: _pages[_selectedIndex],
-              bottomNavigationBar: BottomNavigationBar(
-                items: const <BottomNavigationBarItem>[
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.home),
-                    label: '主页',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.list_alt_sharp),
-                    label: '分类',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.search),
-                    label: '搜索',
-                  ),
-                ],
-                currentIndex: _selectedIndex,
-                onTap: _onItemTapped,
-              ),
-            );
-        } else {
-          return const Center(
-            child: CircularProgressIndicator(
-              backgroundColor: Color.fromARGB(255, 205, 198, 198),
-            ),
-          );
-        }
-      },
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('书库Pro版'),
+      ),
+      drawer: const Drawer(
+        child: Center(
+          child: Column(
+            children: [],
+          ),
+        ),
+      ),
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: '主页',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.search),
+            label: '搜索',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+      ),
     );
   }
 }

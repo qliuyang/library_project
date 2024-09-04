@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:library_project/page/read_info/info_page.dart';
-import '../../utils/sql.dart';
+import '../../utils/online_sql.dart';
 import '../custom_widget.dart';
 
 class SearchPage extends StatefulWidget {
@@ -16,11 +16,9 @@ class _SearchPageState extends State<SearchPage> {
   final TextEditingController _searchController = TextEditingController();
   List<Book> _searchResults = [];
 
-  // Debounce mechanism to minimize database calls
   Timer? _debounce;
 
   void _onSearchTextChanged(String value) {
-    // Reset debounce timer
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 300), () {
       _searchAsync(value);
@@ -34,8 +32,7 @@ class _SearchPageState extends State<SearchPage> {
       });
       return; // No search term, clear results
     }
-
-    final results = await Sql().searchBook(query);
+    final results = await BookGetterYunShuWu().searchBookByName(query);
     setState(() {
       _searchResults = results;
     });
@@ -64,12 +61,10 @@ class _SearchPageState extends State<SearchPage> {
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: Column(children: [
-                ListWidget(
-                  books: _searchResults,
-                  onBookSelected: navigateToInfoPage,
-                )
-              ]),
+              child: SimpleListWidget(
+                books: _searchResults,
+                onBookSelected: navigateToInfoPage,
+              ),
             )
           ],
         ),
