@@ -12,13 +12,13 @@ class ReadPage extends StatefulWidget {
 }
 
 class _ReadPageState extends State<ReadPage> {
-  late int _bookId;
   String _content = '';
   String _bookTitle = '';
   String _chapterTitle = '';
   int _chapterchapterRowNum = 0;
   late int _chapterPos;
   bool _isPureMode = true;
+  bool _isLoading = true;
   late final ScrollController _scrollController;
 
   void togglePureMode() {
@@ -36,7 +36,6 @@ class _ReadPageState extends State<ReadPage> {
   }
 
   void _loadBookidAndTitle() {
-    _bookId = widget.book.bookId;
     _bookTitle = widget.book.title;
     _chapterPos = widget.book.chapterPos;
   }
@@ -45,8 +44,13 @@ class _ReadPageState extends State<ReadPage> {
     if (_chapterchapterRowNum > 1) {
       scrollToTop();
     }
-    final chapter = await BookGetterYunShuWu().getChapter(_chapterPos + _chapterchapterRowNum);
     setState(() {
+      _isLoading = true;
+    });
+    final chapter = await BookGetterYunShuWu()
+        .getChapter(_chapterPos + _chapterchapterRowNum);
+    setState(() {
+      _isLoading = false;
       _chapterTitle = chapter.title;
       _content = chapter.content;
     });
@@ -61,7 +65,7 @@ class _ReadPageState extends State<ReadPage> {
   }
 
   void _loadLastChapter() async {
-    if (_chapterchapterRowNum <= 1) {
+    if (_chapterchapterRowNum < 1) {
       return;
     }
     _chapterchapterRowNum--;
@@ -99,6 +103,12 @@ class _ReadPageState extends State<ReadPage> {
         },
       ),
       actions: [
+        Visibility(
+          visible: _isLoading,
+          child: const CircularProgressIndicator(
+            backgroundColor: Colors.grey,
+          ),
+        ),
         IconButton(
           icon: Icon(_isPureMode ? Icons.view_list : Icons.view_quilt),
           onPressed: togglePureMode,
